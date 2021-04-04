@@ -14,17 +14,21 @@ namespace Tracer
             Radius = radius;
         }
 
-        public override bool Hit(Ray r, float tMin, float tMax, HitRecord record) 
+        public override HitRecord Hit(Ray r, float tMin, float tMax) 
         {
+            HitRecord rec = new HitRecord();
             // Some simplifications applied (instead of using b, use b/2)
             Vector3 rayToCenter = r.Origin - Center;
             float a = Vector3.Dot(r.Direction, r.Direction);
             float halfb = Vector3.Dot(r.Direction, rayToCenter);
             float c = Vector3.Dot(rayToCenter, rayToCenter) - Radius * Radius;
-            float discriminant = (halfb * halfb - 4 * a * c);
+            float discriminant = (halfb * halfb - a * c);
 
             if (discriminant < 0)
-                return false;
+            {
+                rec.isHit = false;
+                return rec;
+            }
             else
             {
                 float sqrtd = (float)Math.Sqrt(discriminant);
@@ -33,13 +37,16 @@ namespace Tracer
                 {
                     root = (-halfb + sqrtd) / a;
                     if (root < tMin || root > tMax)
-                        return false;
+                    {
+                        rec.isHit = false;
+                        return rec;
+                    }
                 }
-
-                record.t = root;
-                record.point = r.At(record.t);
-                record.normal = (record.point - Center) / Radius;
-                return true;
+                rec.isHit = true;
+                rec.t = root;
+                rec.point = r.At(rec.t);
+                rec.normal = (rec.point - Center) / Radius;
+                return rec;
             }
         }
     }

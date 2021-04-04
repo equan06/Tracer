@@ -4,8 +4,17 @@ using System.Numerics;
 
 namespace Tracer
 {
+
     class Tracer
     {
+        public const float infinity = int.MaxValue;
+        public const float pi = (float)Math.PI;
+
+        public float DegreesToRadians(float deg)
+        {
+            return deg * pi / 180;
+        }
+
         static void Main(string[] args)
         {
             const float AspectRatio = 16f / 9;
@@ -24,7 +33,9 @@ namespace Tracer
             // Create the corner of the viewport
             Vector3 lowerLeftCorner = origin - horizontal / 2 - vertical / 2 - new Vector3(0, 0, focalLength);
 
-
+            HittableList world = new HittableList();
+            world.Add(new Sphere(new Vector3(0, 0, -1), 0.5f));
+            world.Add(new Sphere(new Vector3(0, -100.5f, -1), 100f));
 
             Console.WriteLine($"P3\n{ImageWidth} {ImageHeight}\n255");
 
@@ -38,7 +49,7 @@ namespace Tracer
                     // Draw a ray from the origin to the viewport
                     Ray r = new Ray(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
                     // Compute the color at the intersection between the ray and the viewport
-                    WriteLineColor(RayColor(r));
+                    WriteLineColor(RayColor(r, world));
                 }
             }
 
@@ -54,22 +65,18 @@ namespace Tracer
             Console.WriteLine($"{(int)(255.999 * v.X)} {(int)(255.999 * v.Y)} {(int)(255.999 * v.Z)}");
         }
 
-        public static Vector3 RayColor(Ray r)
+        public static Vector3 RayColor(Ray r, HittableList world)
         {
-            Vector3 center = new Vector3(0, 0, -1);
-            float radius = 0.5f;
-            // Calculate the surface normal at the closest point of intersection
-            float t = HitSphere(center, radius, r);
-            if (t > 0)
+            HitRecord rec = world.Hit(r, 0, infinity);
+            if (rec.isHit)
             {
-                // Basically, take the surface normal components and scale to [0, 1]
-                Vector3 normal = Vector3.Normalize(r.At(t) - center); 
-                return 0.5f * new Vector3(normal.X + 1, normal.Y + 1, normal.Z + 1);
+                // Calculate the surface normal of the closest object, and scale to [0,1]
+                return 0.5f * (rec.normal + new Vector3(1, 1, 1));
             }
 
             Vector3 unitDirection = Vector3.Normalize(r.Direction);
             // Scale y from [-1, 1] to [0, 1]
-            t = 0.5f * (1 + unitDirection.Y);
+            float t = 0.5f * (1 + unitDirection.Y);
             // Linear interp. from white (255, 255, 255) to blue (128, 180, 255) based on y
             return (1 - t) * new Vector3(1, 1, 1) + t * new Vector3(0.5f, 0.7f, 1.0f);
         }
